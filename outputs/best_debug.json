@@ -1,0 +1,258 @@
+{
+  "index": "rankeval_demo",
+  "main_metric": "mean_reciprocal_rank",
+  "tie_breaks": [
+    "dcg",
+    "recall",
+    "precision"
+  ],
+  "best_params": {
+    "boost_title": 0.5,
+    "boost_content": 0.5,
+    "operator": "or",
+    "msm_fields": 1,
+    "msm_terms": "50%",
+    "fuzziness": "AUTO"
+  },
+  "best_scores": {
+    "precision": 0.8500000000000001,
+    "recall": 0.825,
+    "mean_reciprocal_rank": 1.0,
+    "dcg": 11.025338333607554
+  },
+  "debug_k": 10,
+  "per_query": {
+    "q1": {
+      "query_params": {
+        "searchKeyword": "dream ambition goals"
+      },
+      "gold": [
+        {
+          "_id": "doc1",
+          "rating": 3
+        },
+        {
+          "_id": "doc4",
+          "rating": 2
+        },
+        {
+          "_id": "doc2",
+          "rating": 1
+        },
+        {
+          "_id": "doc22",
+          "rating": 1
+        }
+      ],
+      "hits": [
+        {
+          "_id": "doc1",
+          "_score": 3.9264226,
+          "title": "Dream big",
+          "content": "A short story about a dream and ambition. Big goals and persistence."
+        },
+        {
+          "_id": "doc4",
+          "_score": 3.794308,
+          "title": "Ambition and goals",
+          "content": "How to set goals. Dreaming is not enough without a plan."
+        },
+        {
+          "_id": "doc22",
+          "_score": 3.4421601,
+          "title": "Dreams and sleep study",
+          "content": "Scientific study about dreams during REM sleep. No ambition/goals."
+        },
+        {
+          "_id": "doc3",
+          "_score": 2.160398,
+          "title": "Dream Theater setlist",
+          "content": "Concert review and setlist. Music band named Dream Theater."
+        },
+        {
+          "_id": "doc2",
+          "_score": 1.6402028,
+          "title": "Night thoughts",
+          "content": "I had a vivid dream last night. Not about ambition, just random scenes."
+        }
+      ]
+    },
+    "q2": {
+      "query_params": {
+        "searchKeyword": "san giorgio manual"
+      },
+      "gold": [
+        {
+          "_id": "doc5",
+          "rating": 3
+        },
+        {
+          "_id": "doc6",
+          "rating": 2
+        },
+        {
+          "_id": "doc7",
+          "rating": 1
+        },
+        {
+          "_id": "doc21",
+          "rating": 1
+        }
+      ],
+      "hits": [
+        {
+          "_id": "doc5",
+          "_score": 4.4555435,
+          "title": "SAN GIORGIO equipment manual",
+          "content": "Installation instructions for SAN GIORGIO pump equipment. Safety notes."
+        },
+        {
+          "_id": "doc21",
+          "_score": 4.2671604,
+          "title": "SAN-GEORGIO quickstart",
+          "content": "Spelling variation SAN-GEORGIO. Quick manual notes and setup."
+        },
+        {
+          "_id": "doc8",
+          "_score": 3.2523093,
+          "title": "San Giorgio restaurant review",
+          "content": "A restaurant called San Giorgio. Menu and reviews."
+        },
+        {
+          "_id": "doc6",
+          "_score": 2.668326,
+          "title": "SAN GIORGIO troubleshooting guide",
+          "content": "Manual-like troubleshooting steps. Error codes and maintenance."
+        },
+        {
+          "_id": "doc7",
+          "_score": 2.401778,
+          "title": "Giorgio parts catalog",
+          "content": "Replacement parts for San Giorgio equipment. Part numbers and diagrams."
+        },
+        {
+          "_id": "doc9",
+          "_score": 1.5392514,
+          "title": "Giorgio Armani new collection",
+          "content": "Fashion news about Giorgio Armani. Not related to equipment."
+        }
+      ]
+    },
+    "q3": {
+      "query_params": {
+        "searchKeyword": "rank eval mustache template"
+      },
+      "gold": [
+        {
+          "_id": "doc10",
+          "rating": 3
+        },
+        {
+          "_id": "doc11",
+          "rating": 3
+        },
+        {
+          "_id": "doc23",
+          "rating": 2
+        },
+        {
+          "_id": "doc12",
+          "rating": 2
+        },
+        {
+          "_id": "doc13",
+          "rating": 1
+        },
+        {
+          "_id": "doc19",
+          "rating": 1
+        }
+      ],
+      "hits": [
+        {
+          "_id": "doc11",
+          "_score": 5.0996695,
+          "title": "Search templates with mustache",
+          "content": "How to use mustache search templates. Render with _render/template."
+        },
+        {
+          "_id": "doc10",
+          "_score": 2.3373399,
+          "title": "Elasticsearch rank eval guide",
+          "content": "Using _rank_eval to evaluate search relevance. Precision, recall, DCG, MRR."
+        },
+        {
+          "_id": "doc19",
+          "_score": 2.2288108,
+          "title": "Mustache templates (general)",
+          "content": "Mustache templating language basics. Not Elasticsearch."
+        }
+      ]
+    },
+    "q4": {
+      "query_params": {
+        "searchKeyword": "kubernetes networking dns"
+      },
+      "gold": [
+        {
+          "_id": "doc15",
+          "rating": 3
+        },
+        {
+          "_id": "doc24",
+          "rating": 3
+        },
+        {
+          "_id": "doc18",
+          "rating": 2
+        },
+        {
+          "_id": "doc17",
+          "rating": 1
+        },
+        {
+          "_id": "doc14",
+          "rating": 1
+        }
+      ],
+      "hits": [
+        {
+          "_id": "doc24",
+          "_score": 3.924581,
+          "title": "Kubernetes DNS ??? ???",
+          "content": "kube-dns/CoreDNS troubleshooting guide. ????????????????."
+        },
+        {
+          "_id": "doc15",
+          "_score": 3.1045523,
+          "title": "K8s networking deep dive",
+          "content": "DNS, service discovery, Ingress, and network policies in Kubernetes."
+        },
+        {
+          "_id": "doc16",
+          "_score": 2.871172,
+          "title": "Service discovery and DNS",
+          "content": "General service discovery and DNS concepts. Not Kubernetes-specific."
+        },
+        {
+          "_id": "doc18",
+          "_score": 2.3463802,
+          "title": "CNI plugins overview",
+          "content": "Kubernetes networking uses CNI. Calico, Cilium, Flannel comparison."
+        },
+        {
+          "_id": "doc14",
+          "_score": 1.3662642,
+          "title": "Kubernetes basics",
+          "content": "Pods, deployments, services. Quickstart for beginners."
+        },
+        {
+          "_id": "doc17",
+          "_score": 0.9338011,
+          "title": "Ingress controller setup",
+          "content": "NGINX Ingress for Kubernetes. TLS, routing, annotations."
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "q1": [
+    { "_id": "doc1", "rating": 3 },
+    { "_id": "doc4", "rating": 2 },
+    { "_id": "doc2", "rating": 1 },
+    { "_id": "doc22", "rating": 1 }
+  ],
+  "q2": [
+    { "_id": "doc5", "rating": 3 },
+    { "_id": "doc6", "rating": 2 },
+    { "_id": "doc7", "rating": 1 },
+    { "_id": "doc21", "rating": 1 }
+  ],
+  "q3": [
+    { "_id": "doc10", "rating": 3 },
+    { "_id": "doc11", "rating": 3 },
+    { "_id": "doc23", "rating": 2 },
+    { "_id": "doc12", "rating": 2 },
+    { "_id": "doc13", "rating": 1 },
+    { "_id": "doc19", "rating": 1 }
+  ],
+  "q4": [
+    { "_id": "doc15", "rating": 3 },
+    { "_id": "doc24", "rating": 3 },
+    { "_id": "doc18", "rating": 2 },
+    { "_id": "doc17", "rating": 1 },
+    { "_id": "doc14", "rating": 1 }
+  ]
+}

@@ -1,0 +1,385 @@
+오케이. 지금 네 `gold.json` / `queries.json`이 왜 저렇게 생겼는지, 그리고 `_rank_eval`이 실제로 어떻게 동작하는지 “기억 복구” 느낌으로 정리해줄게. (지금 구성은 **정상**이고, 의도도 명확해.)
+
+---
+
+## `_rank_eval`이 하는 일(핵심)
+
+`_rank_eval`은 간단히 말해:
+
+1. **여러 개의 검색 쿼리(request)** 를 실행해보고
+2. 각 쿼리에 대해 **정답지(골드, rated docs)** 를 참고해서
+3. **precision/recall/MRR/DCG 같은 점수**를 계산해주는 API야.
+
+즉, “튜닝한 쿼리 A vs 쿼리 B 중 어떤 게 더 좋은지” 비교하려고 쓰는 거.
+
+---
+
+## `queries.json`은 뭔가?
+
+`queries.json`은 **테스트할 질문 목록(queries)** 이야.
+
+```json
+[
+  { "id": "q1", "params": { "searchKeyword": "dream ambition goals" } },
+  ...
+]
+```
+
+* `id`: 이 쿼리의 이름표(키). gold.json과 연결되는 핵심 키.
+* `params`: 템플릿에 들어갈 파라미터. 여기서는 `searchKeyword` 하나만 주는 중.
+
+그리고 run_grid.py는 이 `params`에다가 grid 조합을 합쳐서 렌더링함:
+
+* q1.params: `searchKeyword="dream ambition goals"`
+* combo: `boost_title=2.0, boost_content=1.0, operator="and", msm_terms="75%"...`
+* 합쳐서 템플릿 렌더 → 최종 검색 DSL 생성
+
+✅ 요약: **queries.json = “무슨 검색을 시험해볼 건지” 목록** (질문 세트)
+
+---
+
+## `gold.json`은 뭔가?
+
+`gold.json`은 **정답지(qrels, relevance judgments)** 야.
+
+```json
+"q1": [
+  { "_id": "doc1", "rating": 3 },
+  { "_id": "doc4", "rating": 2 },
+  { "_id": "doc2", "rating": 1 },
+  { "_id": "doc22", "rating": 1 }
+]
+```
+
+* `"q1"`: queries.json의 `"id":"q1"`과 반드시 매칭돼야 함
+* 각 항목은:
+
+  * `_id`: ES 문서 id
+  * `rating`: 그 문서가 q1에 얼마나 관련있는지(graded relevance)
+
+### rating 숫자는 무엇을 의미?
+
+보통 이런 의미로 써:
+
+* 3: 완전 정답 (highly relevant)
+* 2: 꽤 관련
+* 1: 약간 관련
+* 0: 관련 없음(보통 gold에는 0은 안 넣고 “없는 문서 = 0” 취급)
+
+✅ 요약: **gold.json = “각 질문(qid)에 대한 정답 문서 목록 + 관련도 점수”**
+
+---
+
+## 두 파일이 어떻게 연결되냐 (가장 중요)
+
+* `queries.json`의 `id` = `gold.json`의 키
+
+예:
+
+* queries.json에 `{"id":"q3"...}`가 있으면
+* gold.json에도 `"q3": [...]`가 있어야 해
+
+없으면 run_grid.py가 바로 에러 냄(“Missing gold …”)
+
+---
+
+## `_rank_eval`이 점수를 계산하는 방식(감으로 이해하기)
+
+### 1) `_rank_eval` 내부에서 하는 일(쿼리 하나 기준)
+
+예를 들어 q1:
+
+1. 템플릿 렌더 결과로 ES가 검색함(top k, 예: k=5)
+2. 그 top-k 결과 목록에서,
+3. gold.json에 적힌 문서들을 “정답”으로 보고 점수 계산
+
+---
+
+## metric들이 gold(rating)를 어떻게 쓰는지
+
+### ✅ Precision@k
+
+* top-k 결과 중에서 **정답(=rating≥threshold)** 이 몇 개인지 / k
+* 예: top5 중 4개가 gold에 있으면 precision@5 = 0.8
+
+### ✅ Recall@k
+
+* gold 정답 문서(=rating≥threshold) 중에서 top-k 안에 몇 개나 잡혔는지
+* gold가 6개인데 top5에 3개만 있으면 recall@5 = 0.5
+
+### ✅ MRR
+
+* “첫 번째 정답이 몇 등인지”만 본다
+* 1등이 정답이면 1.0, 2등이 정답이면 0.5, 3등이면 0.333…
+
+그래서 네가 예전에 “MRR이 1.0으로 다 동점”이었던 이유가:
+
+* 대부분 조합에서 **정답이 1등에 항상 뜨는 쉬운 데이터**였기 때문
+
+### ✅ DCG
+
+* “정답이 위에 있을수록 + rating이 높을수록” 점수가 큼
+* rating 3짜리가 1등이면 엄청 이득
+* rating 1짜리가 1등이고 rating 3짜리가 5등이면 DCG가 낮아짐
+
+그래서 우리가 gold를 3/2/1로 준 이유가:
+
+* “그냥 정답 있냐/없냐”가 아니라
+* **좋은 정답(3)을 더 위로 올리는 조합**을 찾고 싶어서
+
+---
+
+## 지금 네 q1~q4는 어떤 의도를 가진 테스트냐
+
+### q1: `"dream ambition goals"`
+
+* dream 관련 문서가 많아서 노이즈(오답)도 섞이기 쉬움
+* operator=and/or, msm_terms가 성능 갈라짐
+
+gold는:
+
+* doc1(꿈+야망 직접) = 3
+* doc4(ambition/goals) = 2
+* doc2/doc22(꿈은 있지만 방향 다름) = 1
+
+→ 즉 “dream만 나오는 문서 vs ambition/goals까지 포함되는 문서”를 구분하게 하는 세팅
+
+### q2: `"san giorgio manual"`
+
+* equipment/manual 쪽 문서(doc5, doc6)가 진짜 정답
+* restaurant/fashion 같은 “San Giorgio/Giorgio” 오답도 섞이게 해둠
+
+### q3: `"rank eval mustache template"`
+
+* elastic 관련 문서가 여러 방향으로 섞여있고
+* “rank_eval”만 있는 문서 vs “mustache template” 있는 문서가 갈라짐
+
+### q4: `"kubernetes networking dns"`
+
+* kubernetes만 있는 문서(doc14) vs
+* networking/dns까지 정확히 있는 문서(doc15/doc24)가 갈라짐
+
+---
+
+## “왜 이런 구성이 의미가 있냐?”
+
+너는 grid로 이런 걸 바꾸고 있지:
+
+* title vs content 어디를 더 중요하게 볼지(boost)
+* 여러 단어 중 얼마나 맞아야 통과할지(msm_terms)
+* title/content 둘 다 맞아야 할지(msm_fields)
+* OR/AND로 토큰 매칭을 강하게 할지(operator)
+
+이 knobs가 실제로 성능을 바꾸려면,
+
+* **정답과 비슷한 오답이 충분히 있어야 하고**
+* **정답도 (3/2/1)처럼 다양해야 하고**
+* **쿼리도 다단어여야(operator 차이)**
+  점수가 갈리기 시작해.
+
+지금 바꾼 queries/gold는 그 목적에 맞게 “의도적으로 어렵게 만든” 테스트셋이야.
+
+---
+
+## 네가 지금 “뭘 보면” 감이 빨리 오냐
+
+1. `results.json`에서 **per_query**를 먼저 봐
+
+   * 어떤 qid가 조합에 따라 점수가 흔들리는지 확인
+2. 그 qid에 대해
+
+   * 실제 검색 결과 top-k를 `_search`로 찍어서
+   * gold 문서가 몇 등에 뜨는지 확인
+3. 그걸 보면 “아 boost_title을 올리면 title에 있는 doc가 위로 가네” 같은 감이 바로 생겨.
+
+---
+
+원하면 내가 너 run_grid.py에 기능 하나 더 넣어줄게:
+
+* **best 조합**에 대해서
+* 각 qid별로 **top-k 결과(_id + score) 리스트를 같이 저장**해서
+* gold랑 “눈으로 비교 가능한 리포트(best_debug.json)”를 자동 생성
+
+이거 해두면 `_rank_eval` 감 되살리는 데 제일 빨라.
+
+
+
+<best.json>
+
+예시 결과:
+  {
+    "main_metric": "mean_reciprocal_rank",
+    "tie_breaks": [
+      "dcg",
+      "recall",
+      "precision"
+    ],
+    "best_params": {
+      "boost_title": 0.5,
+      "boost_content": 0.5,
+      "operator": "or",
+      "msm_fields": 1,
+      "msm_terms": "50%",
+      "fuzziness": "AUTO"
+    },
+    "best_scores": {
+      "precision": 0.8500000000000001,
+      "recall": 0.825,
+      "mean_reciprocal_rank": 1.0,
+      "dcg": 11.025338333607554
+    }
+  }
+
+1) 이 best가 “어떻게 뽑혔는지”
+
+  "main_metric": "mean_reciprocal_rank",
+  "tie_breaks": ["dcg","recall","precision"]
+의미:
+
+MRR(mean_reciprocal_rank) 를 1순위로 최대화하는 조합을 찾고
+
+MRR이 동점이면 dcg가 더 큰 걸 선택
+
+그것도 동점이면 recall, 그래도 동점이면 precision 순으로 결정
+
+즉, “best”는 항상
+MRR → DCG → Recall → Precision 순으로 비교해서 고른 1등이야.
+
+
+2) best_params
+
+  "best_params": {
+    "boost_title": 0.5,
+    "boost_content": 0.5,
+    "operator": "or",
+    "msm_fields": 1,
+    "msm_terms": "50%",
+    "fuzziness": "AUTO"
+  }
+이건 template.json의 {{ }} 자리에 실제로 들어간 값들이고, 해석은 이렇게 하면 돼:
+
+boost_title / boost_content = 0.5 / 0.5
+
+title과 content를 동일 비중으로 보되(둘 다 0.5), 전체적으로 boost가 크진 않음
+
+(사실 boost는 “서로 상대 비율”이 중요하고, 절대값은 다른 쿼리 요소에 따라 영향이 달라)
+
+operator = "or"
+
+"dream ambition goals" 같은 다단어 쿼리에서
+단어 일부만 맞아도 매칭되게 허용 (and보다 넓게 잡음)
+
+msm_fields = 1
+
+title/content 중 한 군데만 매칭되어도 통과
+
+(2면 “둘 다 매칭”이어서 훨씬 타이트)
+
+msm_terms = "50%"
+
+다단어 쿼리의 토큰 중 절반 이상만 맞아도 매칭 인정
+
+operator=or인데도 너무 느슨해지지 않게 “걸러주는 역할”
+
+fuzziness = "AUTO"
+
+오타/철자 변형/토큰 변형을 어느 정도 허용
+
+san giorgio 같은 케이스에서 변형 문서가 있으면 유리해질 수 있음
+
+👉 한 줄로 요약하면:
+“넓게 잡되(or), 너무 헐렁하진 않게(msm_terms=50%), title/content 어느 쪽이든 걸리게(msm_fields=1), 오타도 허용(AUTO)” 조합이 현재 데이터셋에서 제일 좋았다는 뜻.
+
+3) best_scores = “그 조합의 성능 요약(전체 평균 점수)”
+
+  "best_scores": {
+    "precision": 0.85,
+    "recall": 0.825,
+    "mean_reciprocal_rank": 1.0,
+    "dcg": 11.0253
+  }
+
+각 숫자가 뜻하는 바는:
+
+MRR = 1.0
+
+  각 쿼리(q1~q4)에서 첫 번째 정답 문서(relevant)가 1등으로 나온 비율이 매우 높다는 뜻
+
+  MRR이 1.0이면 보통 “거의 매번 1등에 정답이 있다”로 이해하면 됨.
+
+precision = 0.85
+
+  top-k(네 config에서 k=10) 결과 중 정답 비율이 평균 85% 정도
+
+  즉 10개 중 8~9개가 gold에 있는 문서(또는 threshold 이상)라는 의미
+
+recall = 0.825
+
+  gold에 있는 정답 문서들 중 top-k가 평균 82.5%를 찾아냈다
+
+  gold가 많을수록 recall 올리기 어려움 (특히 q3처럼 gold 문서가 많은 경우)
+
+dcg = 11.0253
+
+“정답이 위에 있을수록 + rating 3이 위에 있을수록” 더 높은 점수
+
+  이 값 자체는 절대해석보단 조합 간 비교용이야
+
+  tie-break 2순위로 쓰는 이유가 “rating 3을 위로 끌어올린 조합”을 고르기 좋기 때문.
+
+
+<best_debug.json>
+이걸 보면 한 번에 감이 와:
+
+  gold에 있는 doc들이 top-k에 실제로 들어왔는지
+
+  들어왔다면 몇 등인지
+
+  “rating 3이 rating 1보다 위에 올라왔는지(DCG 개선 포인트)”
+
+  operator/boost 바꾸면 왜 점수가 움직이는지
+
+추가 팁(바로 유용함)
+
+best_debug.json 확인할 때 제일 먼저 볼 것:
+
+  qid별로 gold 문서가 hits에서 몇 등인지
+
+  특히 rating 3 문서가 1~2등에 안 오면 → boost/msm/operator 튜닝 포인트
+
+
+
+
+
+<모듈 의도>
+
+너가 사용자 의도(정답지 = gold/qrels) 를 갖고 있으면, _rank_eval(또는 지금 만든 키트)은 이렇게 답해줘:
+
+“이 검색 시스템(쿼리/랭킹 설정)은 사용자가 의도한 문서를 상위에 얼마나 잘 올리나?
+첫 결과로 잘 주나(MRR)?
+좋은 정답(3점)을 더 위로 올리나(DCG/NDCG)?
+상위 k개가 깨끗하나(Precision@k)?
+정답을 놓치지 않나(Recall@k)?”
+
+즉, ‘사용자 의도대로 나오는 정도’를 숫자로 판단하는 도구가 맞아.
+
+
+“그럼 이 숫자 보고 합격/불합격도 정하나?”
+
+보통 그렇게 해.
+
+예를 들면 서비스 목적에 따라 목표를 세움:
+
+  FAQ/문서 검색: MRR@10 ≥ 0.85, NDCG@10 ≥ 0.75
+
+  누락이 치명(법무/보안): Recall@50 ≥ 0.95 같은 식
+
+그리고 검색 로직을 바꿨을 때
+
+  점수 올라가면 개선
+
+  점수 떨어지면 회귀(regression)로 판단해서 롤백/수정
+
+
+  
+

@@ -1,0 +1,27 @@
+# Elasticsearch 연결
+es_url: "https://192.168.100.100:9200"
+index: "rankeval_demo"
+
+auth:
+  username: "elastic"
+  password: "wnyt2024!!"
+
+# 네트워크 안정성
+timeout_sec: 30
+retries: 3
+backoff_base: 1.5
+
+# grid 탐색 옵션
+main_metric: "mean_reciprocal_rank"   # best 조합 선정 기준 metric (기본은 mrr)
+max_combinations: 0                  # 0이면 제한 없음(전체 탐색)
+shuffle_combinations: false          # true면 랜덤 순회(개발시 유용)
+
+# metrics (Rank Eval은 metric 1개씩만 계산하므로, 여기 정의된 metric들을 순차 실행)
+metrics:
+  precision: { k: 5, relevant_rating_threshold: 1 }
+  recall:    { k: 5, relevant_rating_threshold: 1 }
+  mean_reciprocal_rank: { k: 5, relevant_rating_threshold: 1 }
+  dcg: { k: 5, normalize: false }
+
+# 출력
+output_dir: "outputs"

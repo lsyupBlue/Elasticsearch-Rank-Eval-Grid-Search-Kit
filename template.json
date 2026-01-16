@@ -1,0 +1,33 @@
+{
+  "source": {
+    "query": {
+      "bool": {
+        "should": [
+          {
+            "match": {
+              "title": {
+                "query": "{{searchKeyword}}",
+                "boost": "{{boost_title}}",
+                "operator": "{{operator}}",
+                "minimum_should_match": "{{msm_terms}}",
+                "fuzziness": "{{fuzziness}}"
+              }
+            }
+          },
+          {
+            "match": {
+              "content": {
+                "query": "{{searchKeyword}}",
+                "boost": "{{boost_content}}",
+                "operator": "{{operator}}",
+                "minimum_should_match": "{{msm_terms}}",
+                "fuzziness": "{{fuzziness}}"
+              }
+            }
+          }
+        ],
+        "minimum_should_match": "{{msm_fields}}"
+      }
+    }
+  }
+}
