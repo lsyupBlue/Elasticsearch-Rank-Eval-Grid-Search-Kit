@@ -1,10 +1,10 @@
 # Elasticsearch 연결
-es_url: "https://192.168.100.100:9200"
+es_url: "https://123.456.100.100:9200"
 index: "rankeval_demo"
 
 auth:
   username: "elastic"
-  password: "wnyt2024!!"
+  password: "********"
 
 # 네트워크 안정성
 timeout_sec: 30
