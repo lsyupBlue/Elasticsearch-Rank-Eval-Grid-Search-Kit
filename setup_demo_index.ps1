@@ -9,10 +9,10 @@ param(
 $ErrorActionPreference = "Stop"
 
 # Defaults
-if ([string]::IsNullOrWhiteSpace($EsUrl))  { $EsUrl = "https://192.168.100.100:9200" }
+if ([string]::IsNullOrWhiteSpace($EsUrl))  { $EsUrl = "https://123.456.100.100:9200" }
 if ([string]::IsNullOrWhiteSpace($Index))  { $Index = "rankeval_demo" }
 if ([string]::IsNullOrWhiteSpace($EsUser)) { $EsUser = "elastic" }
-if ([string]::IsNullOrWhiteSpace($EsPass)) { $EsPass = "wnyt2024!!" }
+if ([string]::IsNullOrWhiteSpace($EsPass)) { $EsPass = "********" }
 
 Write-Host "Using ES_URL=[$EsUrl] INDEX=[$Index] USER=[$EsUser] PASS_LEN=[$($EsPass.Length)] Insecure=[$Insecure]"
 
